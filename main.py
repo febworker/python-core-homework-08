@@ -1,31 +1,43 @@
 from datetime import date, timedelta
+
 def get_birthdays_per_week(users):
-    weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
-    birthday_dict = {day: [] for day in weekdays}
     today = date.today()
+    next_week = today + timedelta(days=7)
+
+    # Визначаємо день тижня
+    current_weekday = today.weekday()
+
+    # Створюємо словник для збереження імен користувачів за днями тижня
+    birthdays_by_day = {
+        'Monday': [],
+        'Tuesday': [],
+        'Wednesday': [],
+        'Thursday': [],
+        'Friday': [],
+    }
+
     for user in users:
         name = user["name"]
         birthday = user["birthday"]
-        day_of_week = birthday.strftime("%A")
-        if today > birthday:
+
+        # Перевіряємо, чи день народження вже пройшов у поточному році, і переносимо його на наступний рік, якщо так
+        if birthday < today:
             birthday = birthday.replace(year=today.year + 1)
-            day_of_week = birthday.strftime("%A")
-        if day_of_week in birthday_dict:
-            birthday_dict[day_of_week].append(name)
-    if today.weekday() == 5 or today.weekday() == 6:
-        if birthday_dict['Saturday']:
-            birthday_dict['Monday'] += birthday_dict['Saturday']
-        if birthday_dict['Sunday']:
-            birthday_dict['Monday'] += birthday_dict['Sunday']
-        birthday_dict['Saturday'] = []
-        birthday_dict['Sunday'] = []
-    return birthday_dict
-if __name__ == "__main__":
-    users = [
-        {"name": "Jan Koum", "birthday": date.today() + timedelta(days=2)},
-        {"name": "Bill Gates", "birthday": date.today() - timedelta(days=1)},
-        {"name": "Kim", "birthday": date.today() + timedelta(days=5)},
-    ]
-    result = get_birthdays_per_week(users)
-    for day_name, names in result.items():
-        print(f"{day_name}: {', '.join(names)}")
+
+        # Перевіряємо, чи день народження припадає на наступний тиждень
+        if today <= birthday <= next_week:
+            day_index = birthday.weekday()
+            if day_index == 5 or day_index == 6:
+                # Якщо день народження припадає на вихідний, переносимо його на понеділок
+                day_index = 0
+            day = list(birthdays_by_day.keys())[day_index]
+            birthdays_by_day[day].append(name)
+
+    # Перевіряємо, чи всі дні народження користувачів вже минули у цьому році
+    if not any(birthdays_by_day.values()):
+        return {}
+
+    # Видаляємо дні без привітань
+    birthdays_by_day = {day: names for day, names in birthdays_by_day.items() if names}
+
+    return birthdays_by_day
